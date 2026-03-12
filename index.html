@@ -2,70 +2,68 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Coordinate Command v6.1 - Optimized Engine</title>
+    <title>Coordinate Command v6.4 - Final Lift</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-        body { background: #000; color: #3dfc03; font-family: 'VT323', monospace; display: flex; flex-direction: column; align-items: center; margin: 0; overflow: hidden; }
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; }
-        .war-speech { font-size: 22px; max-width: 800px; text-align: left; border-left: 5px solid #fbff00; padding: 20px; color: #3dfc03; margin-bottom: 20px; background: #080808; }
-        #crt-frame { border: 15px solid #222; border-radius: 25px; position: relative; margin-top: 5px; box-shadow: inset 0 0 80px #000, 0 0 30px #3dfc0333; }
-        canvas { background: #050a05; display: block; image-rendering: pixelated; border-bottom: 4px solid #3dfc03; }
-        .hud-bottom { width: 830px; background: #0a0a0a; display: flex; flex-direction: column; padding: 10px; border: 4px solid #222; border-top: none; }
-        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .formula-box { background: #000; border: 2px solid #3dfc03; padding: 8px; width: 100%; text-align: center; font-size: 20px; color: #fbff00; min-height: 85px; display: flex; align-items: center; justify-content: center; }
-        .slot { background: #111; border: 1px solid #3dfc03; color: #3dfc03; font-family: 'VT323', monospace; font-size: 18px; width: 45px; text-align: center; outline: none; }
-        .op-slot { background: #222; border: 1px solid #3dfc03; color: #fbff00; cursor: pointer; padding: 2px 8px; font-family: 'VT323', monospace; }
-        button { font-family: 'VT323', monospace; font-size: 18px; padding: 5px 12px; cursor: pointer; border: 3px solid; border-radius: 4px; text-transform: uppercase; }
-        .btn-recon { background: #fbff00; color: #000; }
-        .btn-recon.active { background: #3dfc03; box-shadow: 0 0 10px #3dfc03; }
-        .danger-text { color: #ff0000; animation: blink 0.5s infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
+        body { background: #000; color: #3dfc03; font-family: 'VT323', monospace; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 5px; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; box-sizing: border-box; }
+        .war-speech { font-size: 18px; max-width: 650px; text-align: left; border-left: 5px solid #fbff00; padding: 10px; color: #3dfc03; margin-bottom: 10px; background: #080808; }
+        #crt-frame { border: 8px solid #222; border-radius: 10px; position: relative; margin-top: 2px; box-shadow: inset 0 0 30px #000; max-width: 98vw; }
+        canvas { background: #050a05; display: block; image-rendering: pixelated; border-bottom: 3px solid #3dfc03; width: 800px; height: 350px; }
+        .hud-bottom { width: 816px; background: #0a0a0a; display: flex; flex-direction: column; padding: 4px 10px; border: 3px solid #222; border-top: none; box-sizing: border-box; }
+        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+        .formula-box { background: #000; border: 2px solid #3dfc03; padding: 4px; width: 100%; text-align: center; font-size: 16px; color: #fbff00; min-height: 55px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; margin-bottom: 3px; }
+        .slot { background: #111; border: 1px solid #3dfc03; color: #3dfc03; font-family: 'VT323', monospace; font-size: 16px; width: 38px; text-align: center; }
+        .op-slot { background: #222; border: 1px solid #3dfc03; color: #fbff00; cursor: pointer; padding: 1px 4px; font-size: 14px; }
+        button { font-family: 'VT323', monospace; font-size: 15px; padding: 3px 8px; cursor: pointer; border: 2px solid; border-radius: 3px; text-transform: uppercase; }
+        .btn-recon { background: #fbff00; color: #000; border-color: #b58900; }
+        .btn-recon.active { background: #3dfc03; }
     </style>
 </head>
 <body>
 
 <div id="start-screen" class="overlay">
-    <h1 style="color:#fbff00; font-size:50px;">COMMAND BRIEFING: SECTOR 4-X</h1>
+    <h1 style="color:#fbff00; font-size:35px; margin:0;">THE CARTESIAN FRONT</h1>
     <div class="war-speech">
-        "No more training wheels. You have a full squad, a 6-AP team reservoir, and a 3-AP unit limit. <br><br>
-        The <strong>Geneva Protocol</strong> protects the corner camps for Turns 1 and 2. If you infiltrate the enemy corner, you take <strong>2x Damage</strong>, but hold it for 2 turns and the war ends. <br><br>
-        <strong>RECON</strong> costs 1 AP. Use your <strong>Bastion's Aura</strong> to shield allies, and watch your <strong>Sniper's range</strong>—if they get too close, they’re useless. Master the math, or be erased from the grid."
+        "Soldiers, the grid is live. P1 at (-13, -8), P2 at (13, -8). <br><br>
+        Safe Zones are active for Turns 1 and 2. You have <strong>6 Team AP</strong>, and each unit is capped at <strong>3 AP</strong>. <br><br>
+        High Ground ($y \ge 6$) grants +5 DMG. Holding the enemy base for 2 turns wins the sector, but you take <strong>2x Damage</strong> while inside. <strong>DISMISS!</strong>"
     </div>
-    <button style="background:#fbff00; color:#000; font-size:28px;" onclick="startGame()">DEPLOY TO SECTOR</button>
+    <button style="background:#fbff00; color:#000; font-size:22px; padding:8px 25px;" onclick="startGame()">DEPLOY SQUAD</button>
 </div>
 
 <div id="help-screen" class="overlay" style="display:none;">
-    <h1 style="color:#fbff00; font-size:50px;">TACTICAL DATA</h1>
-    <div style="text-align:left; font-size:22px; color:#3dfc03; max-width:700px; line-height:1.5;">
-        <p>• <strong>SNIPER:</strong> 6 Spd. 20 Dmg (>4 units), 5 Dmg (<4 units).</p>
-        <p>• <strong>SOLDIER:</strong> 5 Spd. Piecewise Bend (15/6 Dmg tiers).</p>
-        <p>• <strong>DEMOLISHER:</strong> 4 Spd. Box Area of Effect.</p>
-        <p>• <strong>BASTION:</strong> 3 Spd. Circle Area. 50% Dmg Shield for allies within 3 units.</p>
-        <p>• <strong>RECON:</strong> Costs 1 Team AP to see trajectory.</p>
+    <h1 style="color:#fbff00; font-size:35px;">FIELD MANUAL</h1>
+    <div style="text-align:left; font-size:16px; color:#3dfc03; max-width:600px; line-height:1.3;">
+        <p>• <strong>SNIPER:</strong> Spd 6. Optimal range > 4 units.</p>
+        <p>• <strong>SOLDIER:</strong> Spd 5. Continuous Piecewise Bend.</p>
+        <p>• <strong>DEMOLISHER:</strong> Spd 4. Area Box lockdown.</p>
+        <p>• <strong>BASTION:</strong> Spd 3. 50% Shield Aura (radius 3).</p>
+        <p>• <strong>ECONOMY:</strong> Recon preview costs 1 Team AP.</p>
     </div>
-    <button style="background:#fbff00; color:#000; margin-top:20px;" onclick="closeHelp()">RETURN TO FRONT</button>
+    <button style="background:#fbff00; color:#000;" onclick="closeHelp()">BACK</button>
 </div>
 
-<div id="crt-frame"><canvas id="battlefield" width="800" height="500"></canvas></div>
+<div id="crt-frame"><canvas id="battlefield" width="800" height="350"></canvas></div>
 
 <div class="hud-bottom">
     <div class="row">
-        <div id="allyInfo" style="font-size:18px;">SELECT UNIT</div>
-        <div id="turn-display" style="color:#fbff00; font-size:18px;">TURN 1 - P1 ACTIVE</div>
-        <div style="font-size:20px; color:#fbff00;">TEAM AP: <span id="team-ap">6</span> | UNIT: <span id="unit-ap">0</span>/3</div>
+        <div id="allyInfo" style="font-size:14px;">SELECT UNIT</div>
+        <div id="turn-display" style="color:#fbff00; font-size:16px;">TURN 1 - P1</div>
+        <div style="font-size:16px; color:#fbff00;">TEAM AP: <span id="team-ap">6</span> | UNIT AP: <span id="unit-ap">0</span>/3</div>
     </div>
     <div id="formulaContainer" class="formula-box">HUD IDLE</div>
     <div class="row">
-        <div style="display:flex; gap:8px; align-items:center;">
+        <div style="display:flex; gap:5px; align-items:center;">
             <input type="text" id="mX" class="slot" placeholder="X" oninput="calcMoveCost()">
             <input type="text" id="mY" class="slot" placeholder="Y" oninput="calcMoveCost()">
-            <span id="moveCostDisplay" style="color:#fbff00; width:50px;">0 AP</span>
+            <span id="moveCostDisplay" style="color:#fbff00; width:40px; font-size:12px;">0 AP</span>
             <button style="background:#0044ff; color:white;" onclick="moveUnit()">MOVE</button>
         </div>
         <button id="recon-btn" class="btn-recon" onclick="toggleRecon()">RECON (1AP)</button>
-        <div style="display:flex; gap:8px;">
-            <button onclick="showHelp()">HELP</button>
-            <button onclick="endTurn()" style="background:#333; color:#fff;">PASS</button>
+        <div style="display:flex; gap:5px;">
+            <button onclick="showHelp()" style="background:#444; color:white;">HELP</button>
+            <button onclick="endTurn()" style="background:#222; color:#fff;">END</button>
             <button style="background:#ff0000; color:white;" onclick="fireAction()">FIRE</button>
         </div>
     </div>
@@ -73,12 +71,10 @@
 
 <script>
     const canvas = document.getElementById('battlefield'), ctx = canvas.getContext('2d');
-    const scale = 25, centerX = 400, centerY = 250;
+    const scale = 18, centerX = 400, centerY = 140; // LIFTED AND SCALED DOWN
     
-    // STATE VARIABLES
     let currentPlayer = 1, teamAP = 6, turnCount = 1, selectedId = null, tracer = null, previewActive = false;
-    let p1Cap = 0, p2Cap = 0;
-    let needsRender = true; // OPTIMIZATION: State-driven rendering flag
+    let p1Cap = 0, p2Cap = 0, needsRender = true;
 
     const ICONS = { Sniper: '🎯', Soldier: '🎖️', Demolisher: '🧨', Bastion: '🛡️' };
     const SPEED = { Sniper: 6, Soldier: 5, Demolisher: 4, Bastion: 3 };
@@ -88,19 +84,17 @@
     let units = [
         { id: 'P1-S', type: 'Sniper', x: -13, y: -7, team: 1, hp: 40, max: 40, ap: 0 },
         { id: 'P1-A', type: 'Soldier', x: -14, y: -8, team: 1, hp: 60, max: 60, ap: 0, bend: false },
-        { id: 'P1-D', type: 'Demolisher', x: -12, y: -8, team: 1, hp: 50, max: 50, ap: 0 },
         { id: 'P1-B', type: 'Bastion', x: -13, y: -9, team: 1, hp: 85, max: 85, ap: 0, frag: 3, med: 3 },
         { id: 'P2-S', type: 'Sniper', x: 13, y: -7, team: 2, hp: 40, max: 40, ap: 0 },
         { id: 'P2-A', type: 'Soldier', x: 14, y: -8, team: 2, hp: 60, max: 60, ap: 0, bend: false },
-        { id: 'P2-D', type: 'Demolisher', x: 12, y: -8, team: 2, hp: 50, max: 50, ap: 0 },
         { id: 'P2-B', type: 'Bastion', x: 13, y: -9, team: 2, hp: 85, max: 85, ap: 0, frag: 3, med: 3 }
     ];
 
     function startGame() { document.getElementById('start-screen').style.display='none'; triggerRender(); }
     function showHelp() { document.getElementById('help-screen').style.display='flex'; }
     function closeHelp() { document.getElementById('help-screen').style.display='none'; }
-    function getVal(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
     function triggerRender() { needsRender = true; }
+    function getVal(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
 
     canvas.addEventListener('mousedown', (e) => {
         const rect = canvas.getBoundingClientRect();
@@ -108,7 +102,7 @@
         const my = -(e.clientY - rect.top - centerY) / scale;
         let found = false;
         units.forEach(u => { 
-            if(u.hp > 0 && Math.hypot(u.x - mx, u.y - my) < 0.8 && u.team === currentPlayer) { 
+            if(u.hp > 0 && Math.hypot(u.x - mx, u.y - my) < 1.0 && u.team === currentPlayer) { 
                 selectedId = u.id; previewActive = false; document.getElementById('recon-btn').classList.remove('active'); 
                 updateUI(); found = true;
             } 
@@ -118,70 +112,54 @@
     });
 
     function drawGrid() {
-        ctx.fillStyle = "rgba(251, 191, 36, 0.08)"; ctx.fillRect(0, 0, 800, centerY - 6 * scale); // High Ground
+        ctx.fillStyle = "rgba(251, 191, 36, 0.08)"; ctx.fillRect(0, 0, 800, centerY - 6 * scale); 
         ctx.strokeStyle = '#112211'; ctx.lineWidth = 1;
-        for(let i=-16; i<=16; i++) {
+        for(let i=-20; i<=20; i++) {
             let px = centerX + i*scale, py = centerY - i*scale;
-            ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,500); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,350); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(0,py); ctx.lineTo(800,py); ctx.stroke();
+            if(i%2===0 && i!==0) { ctx.fillStyle="#3dfc0333"; ctx.font="8px Arial"; ctx.fillText(i, px+2, centerY+12); ctx.fillText(i, centerX-15, py+10); }
         }
-        
-        // Draw Bases
         ctx.lineWidth = 2;
-        ctx.strokeStyle = '#3b82f6'; ctx.strokeRect(centerX+bases.p1.x*scale-62.5, centerY-bases.p1.y*scale-62.5, 125, 125); // visual approx of r=2.5
-        ctx.strokeStyle = '#ef4444'; ctx.strokeRect(centerX+bases.p2.x*scale-62.5, centerY-bases.p2.y*scale-62.5, 125, 125);
-        
-        // Draw Ruins
-        ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#ff0000';
-        for(let r of ruins) { 
-            ctx.fillRect(centerX+r.x*scale, centerY-(r.y+r.h)*scale, r.w*scale, r.h*scale); 
-            ctx.strokeRect(centerX+r.x*scale, centerY-(r.y+r.h)*scale, r.w*scale, r.h*scale); 
-        }
-        
-        // Bastion Auras
-        ctx.fillStyle = "rgba(0, 255, 0, 0.05)";
-        for(let u of units) {
-            if(u.type === 'Bastion' && u.hp > 0) {
-                ctx.beginPath(); ctx.arc(centerX+u.x*scale, centerY-u.y*scale, 3*scale, 0, Math.PI*2); ctx.fill(); 
-            }
-        }
-        
-        // Axes
+        ctx.strokeStyle = '#3b82f6'; ctx.strokeRect(centerX+bases.p1.x*scale-45, centerY-bases.p1.y*scale-45, 90, 90);
+        ctx.strokeStyle = '#ef4444'; ctx.strokeRect(centerX+bases.p2.x*scale-45, centerY-bases.p2.y*scale-45, 90, 90);
+        ruins.forEach(r => { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(centerX+r.x*scale, centerY-(r.y+r.h)*scale, r.w*scale, r.h*scale); ctx.strokeStyle = '#ff0000'; ctx.strokeRect(centerX+r.x*scale, centerY-(r.y+r.h)*scale, r.w*scale, r.h*scale); });
+        units.forEach(u => { if(u.type === 'Bastion' && u.hp > 0) { ctx.fillStyle = "rgba(0, 255, 0, 0.05)"; ctx.beginPath(); ctx.arc(centerX+u.x*scale, centerY-u.y*scale, 3*scale, 0, Math.PI*2); ctx.fill(); } });
         ctx.strokeStyle = '#3dfc03'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(centerX,0); ctx.lineTo(centerX,500); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(centerX,0); ctx.lineTo(centerX,350); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0,centerY); ctx.lineTo(800,centerY); ctx.stroke();
     }
 
     function renderLoop() {
         if(needsRender || tracer) {
-            ctx.clearRect(0,0,800,500); 
-            drawGrid();
+            ctx.clearRect(0,0,800,350); drawGrid();
+            if(tracer) { ctx.strokeStyle="white"; ctx.lineWidth=3; ctx.beginPath(); tracer.pts.forEach((p,i) => i===0 ? ctx.moveTo(p.px,p.py) : ctx.lineTo(p.px,p.py)); ctx.stroke(); }
             
-            // Draw Tracer
-            if(tracer) { 
-                ctx.strokeStyle="white"; ctx.lineWidth=3; ctx.beginPath(); 
-                tracer.pts.forEach((p,i) => i===0 ? ctx.moveTo(p.px,p.py) : ctx.lineTo(p.px,p.py)); 
-                ctx.stroke(); 
+            if(previewActive && selectedId) {
+                const u = units.find(unit => unit.id === selectedId);
+                ctx.strokeStyle = "rgba(61, 252, 3, 0.3)"; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+                ctx.beginPath(); ctx.moveTo(centerX+u.x*scale, centerY-u.y*scale);
+                let m = getVal('m1') || 1; ctx.lineTo(centerX+(u.x+10)*scale, centerY-(u.y+10*m)*scale);
+                ctx.stroke(); ctx.setLineDash([]);
             }
-            
-            // Draw Units
-            for(let u of units) {
-                if(u.hp <= 0) continue;
+
+            units.forEach(u => {
+                if(u.hp <= 0) return;
                 const px = centerX+u.x*scale, py = centerY-u.y*scale;
                 ctx.fillStyle = u.team === 1 ? '#00ff00' : '#ff0000';
-                if(selectedId === u.id) { ctx.strokeStyle = "white"; ctx.strokeRect(px-12, py-12, 24, 24); }
-                ctx.fillRect(px-8, py-8, 16, 16);
-                ctx.fillStyle = "#fff"; ctx.font = "10px VT323"; ctx.fillText(`${Math.ceil(u.hp)}`, px-6, py+22);
-                ctx.fillStyle = "#000"; ctx.font = "12px Arial"; ctx.fillText(ICONS[u.type], px-6, py+5);
-            }
-            needsRender = false; // Reset flag after drawing
+                if(selectedId === u.id) { ctx.strokeStyle = "white"; ctx.strokeRect(px-9, py-9, 18, 18); }
+                ctx.fillRect(px-6, py-6, 12, 12);
+                ctx.fillStyle = "#fff"; ctx.font = "10px VT323"; ctx.fillText(`${Math.ceil(u.hp)}`, px-5, py+16);
+                ctx.fillStyle = "#000"; ctx.font = "9px Arial"; ctx.fillText(ICONS[u.type], px-4, py+3);
+            });
+            needsRender = false;
         }
-        requestAnimationFrame(renderLoop); // OPTIMIZATION: Browser handles timing efficiently
+        requestAnimationFrame(renderLoop);
     }
 
     function calcMoveCost() {
         const u = units.find(u => u.id === selectedId);
-        if(!u) { document.getElementById('moveCostDisplay').innerText = `0 AP`; return 0; }
+        if(!u) return 0;
         const tx = getVal('mX'), ty = getVal('mY');
         const cost = Math.ceil(Math.hypot(tx-u.x, ty-u.y) / SPEED[u.type]);
         document.getElementById('moveCostDisplay').innerText = `${cost} AP`;
@@ -191,17 +169,9 @@
     function updateUI() {
         const u = units.find(u => u.id === selectedId);
         document.getElementById('team-ap').innerText = teamAP;
-        
-        if(!u) {
-            document.getElementById('allyInfo').innerText = "SELECT UNIT";
-            document.getElementById('unit-ap').innerText = "0";
-            document.getElementById('formulaContainer').innerText = "HUD IDLE";
-            return;
-        }
-
+        if(!u) { document.getElementById('allyInfo').innerText = "SELECT UNIT"; document.getElementById('unit-ap').innerText = "0"; document.getElementById('formulaContainer').innerText = "HUD IDLE"; return; }
         document.getElementById('unit-ap').innerText = u.ap;
-        document.getElementById('allyInfo').innerText = `[${ICONS[u.type]}] ${u.type} (Speed: ${SPEED[u.type]})`;
-        
+        document.getElementById('allyInfo').innerText = `${u.type}`;
         const c = document.getElementById('formulaContainer');
         if(u.type === 'Sniper') c.innerHTML = `y - ${u.y} = <input id="m1" class="slot" value="1" oninput="triggerRender()"> (x - ${u.x})`;
         else if(u.type === 'Soldier') {
@@ -209,10 +179,9 @@
             if(!u.bend) c.innerHTML = toggle + ` y - ${u.y} = <input id="m1" class="slot" value="1" oninput="triggerRender()"> (x - ${u.x})`;
             else c.innerHTML = toggle + ` y - ${u.y} = <input id="m1" class="slot" value="1" oninput="triggerRender()">(x-${u.x}) to xL=<input id="xL" class="slot" value="${u.x+3}" oninput="triggerRender()">, m2=<input id="m2" class="slot" value="-1" oninput="triggerRender()">`;
         }
-        else if(u.type === 'Demolisher') c.innerHTML = `<input id="x1" class="slot" value="-5" oninput="triggerRender()"> ≤ x ≤ <input id="x2" class="slot" value="0" oninput="triggerRender()"> AND <input id="y1" class="slot" value="-2" oninput="triggerRender()"> ≤ y ≤ <input id="y2" class="slot" value="2" oninput="triggerRender()">`;
-        else if(u.type === 'Bastion') c.innerHTML = `<select id="b-mode" class="op-slot" onchange="triggerRender()"><option value="frag">FRAG (${u.frag})</option><option value="med">MED (${u.med})</option></select> (x - <input id="h" class="slot" value="${u.x}" oninput="triggerRender()">)² + (y - <input id="k" class="slot" value="${u.y}" oninput="triggerRender()">)² ≤ <input id="r" class="slot" value="2" oninput="triggerRender()">²`;
-        calcMoveCost();
-        triggerRender();
+        else if(u.type === 'Demolisher') c.innerHTML = `<input id="x1" class="slot" value="-5" oninput="triggerRender()"> ≤ x ≤ <input id="x2" class="slot" value="0"> AND <input id="y1" class="slot" value="-2"> ≤ y ≤ <input id="y2" class="slot" value="2">`;
+        else if(u.type === 'Bastion') c.innerHTML = `<select id="b-mode" class="op-slot" onchange="triggerRender()"><option value="frag">FRAG (${u.frag})</option><option value="med">MED (${u.med})</option></select> (x-${u.x})²+(y-${u.y})² ≤ <input id="r" class="slot" value="2" oninput="triggerRender()">²`;
+        calcMoveCost(); triggerRender();
     }
 
     function toggleSoldierBend() { const u = units.find(u => u.id === selectedId); u.bend = !u.bend; updateUI(); }
@@ -223,72 +192,49 @@
         if(!u || teamAP < 1 || u.ap >= 3) return;
         let pts = [], targets = new Set(), pwr = u.y >= 6 ? 20 : 15;
         const m1 = getVal('m1'), xL = getVal('xL'), m2 = getVal('m2');
+        const isBlocked = (x, y) => { for(let r of ruins) { if(x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return true; } return false; };
 
         const applyDmg = (t, base) => {
             const protector = units.find(p => p.type === 'Bastion' && p.team === t.team && p.hp > 0 && Math.hypot(p.x-t.x, p.y-t.y) <= 3);
             let d = (protector && protector !== t) ? base * 0.5 : base;
-            
             const enemyB = t.team === 1 ? bases.p2 : bases.p1;
-            if (Math.hypot(t.x-enemyB.x, t.y-enemyB.y) < 2.5) d *= 2; // Vulnerability
-            
+            if (Math.hypot(t.x-enemyB.x, t.y-enemyB.y) < 2.5) d *= 2;
             const ownB = t.team === 1 ? bases.p1 : bases.p2;
-            if (turnCount <= 2 && Math.hypot(t.x-ownB.x, t.y-ownB.y) < 2.5) d = 0; // Geneva Protocol Safe Zone
-            
+            if (turnCount <= 2 && Math.hypot(t.x-ownB.x, t.y-ownB.y) < 2.5) d = 0;
             t.hp -= d;
         };
 
-        // OPTIMIZATION: Pre-calculate bounds for faster raycasting
-        const isBlocked = (x, y) => {
-            for(let r of ruins) { if(x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return true; }
-            return false;
-        };
-
         if(u.type === 'Sniper' || (u.type === 'Soldier' && !u.bend)) {
-            for(let i=u.x; i<=16; i+=0.2) { let cy=m1*(i-u.x)+u.y; if(isBlocked(i,cy)) break; pts.push({px:centerX+i*scale, py:centerY-cy*scale}); units.forEach(t=>{ if(t.team!==u.team && Math.hypot(t.x-i, t.y-cy)<0.4) { targets.add({t, d:(u.type==='Sniper'&&Math.hypot(t.x-u.x, t.y-u.y)<4)?5:pwr}); }}); }
-            for(let i=u.x; i>=-16; i-=0.2) { let cy=m1*(i-u.x)+u.y; if(isBlocked(i,cy)) break; pts.unshift({px:centerX+i*scale, py:centerY-cy*scale}); units.forEach(t=>{ if(t.team!==u.team && Math.hypot(t.x-i, t.y-cy)<0.4) { targets.add({t, d:(u.type==='Sniper'&&Math.hypot(t.x-u.x, t.y-u.y)<4)?5:pwr}); }}); }
+            for(let i=u.x; i<=16; i+=0.2) { let cy=m1*(i-u.x)+u.y; if(isBlocked(i,cy)) break; pts.push({px:centerX+i*scale, py:centerY-cy*scale}); units.forEach(t=>{ if(t.team!==u.team && Math.hypot(t.x-i, t.y-cy)<0.5) { targets.add({t, d:(u.type==='Sniper'&&Math.hypot(t.x-u.x, t.y-u.y)<4)?5:pwr}); }}); }
+            for(let i=u.x; i>=-16; i-=0.2) { let cy=m1*(i-u.x)+u.y; if(isBlocked(i,cy)) break; pts.unshift({px:centerX+i*scale, py:centerY-cy*scale}); units.forEach(t=>{ if(t.team!==u.team && Math.hypot(t.x-i, t.y-cy)<0.5) { targets.add({t, d:(u.type==='Sniper'&&Math.hypot(t.x-u.x, t.y-u.y)<4)?5:pwr}); }}); }
         } else if(u.type === 'Soldier' && u.bend) {
             const dir = xL > u.x ? 0.2 : -0.2; const yL = m1*(xL-u.x)+u.y;
-            for(let i=u.x; (dir>0?i<=xL:i>=xL); i+=dir) { let cy=m1*(i-u.x)+u.y; if(isBlocked(i,cy)) break; pts.push({px:centerX+i*scale, py:centerY-cy*scale}); units.forEach(t=>{if(t.team!==u.team && Math.hypot(t.x-i, t.y-cy)<0.4) targets.add({t, d:15});}); }
-            for(let i=xL; (dir>0?i<=16:i>=-16); i+=dir) { let cy=m2*(i-xL)+yL; if(isBlocked(i,cy)) break; pts.push({px:centerX+i*scale, py:centerY-cy*scale}); units.forEach(t=>{if(t.team!==u.team && Math.hypot(t.x-i, t.y-cy)<0.4) targets.add({t, d:6});}); }
-        } else if(u.type === 'Demolisher') {
-            const x1=getVal('x1'), x2=getVal('x2'), y1=getVal('y1'), y2=getVal('y2');
-            units.forEach(t=>{if(t.team!==u.team && t.x>=x1 && t.x<=x2 && t.y>=y1 && t.y<=y2) targets.add({t, d:20});});
-        } else if(u.type === 'Bastion') {
-            const mode=document.getElementById('b-mode').value, h=getVal('h'), k=getVal('k'), r=Math.min(3, getVal('r'));
-            if(mode==='frag' && u.frag > 0) { u.frag--; units.forEach(t=>{if(t.team!==u.team && Math.hypot(t.x-h, t.y-k)<=r) targets.add({t, d:15});}); }
-            else if(mode==='med' && u.med > 0) { u.med--; units.forEach(t=>{if(t.team===u.team && Math.hypot(t.x-h, t.y-k)<=r) t.hp=Math.min(t.max, t.hp+15);}); }
+            for(let i=u.x; (dir>0?i<=xL:i>=xL); i+=dir) { let cy=m1*(i-u.x)+u.y; if(isBlocked(i,cy)) break; pts.push({px:centerX+i*scale, py:centerY-cy*scale}); units.forEach(t=>{if(t.team!==u.team && Math.hypot(t.x-i, t.y-cy)<0.5) targets.add({t, d:15});}); }
+            for(let i=xL; (dir>0?i<=16:i>=-16); i+=dir) { let cy=m2*(i-xL)+yL; if(isBlocked(i,cy)) break; pts.push({px:centerX+i*scale, py:centerY-cy*scale}); units.forEach(t=>{if(t.team!==u.team && Math.hypot(t.x-i, t.y-cy)<0.5) targets.add({t, d:6});}); }
         }
 
-        targets.forEach(h => applyDmg(h.t, h.d));
-        teamAP--; u.ap++; tracer={pts}; updateUI(); triggerRender();
+        targets.forEach(h => applyDmg(h.t, h.d)); teamAP--; u.ap++; tracer={pts}; updateUI(); triggerRender();
         setTimeout(()=>{tracer=null; triggerRender();}, 800);
     }
 
     function moveUnit() {
-        const u=units.find(u=>u.id===selectedId);
-        const tx=getVal('mX'), ty=getVal('mY');
-        const cost = calcMoveCost();
+        const u=units.find(u=>u.id===selectedId), tx=getVal('mX'), ty=getVal('mY'), cost = calcMoveCost();
         if(!u || teamAP < cost || (u.ap + cost) > 3) { alert("INSUFFICIENT AP"); return; }
         u.x=tx; u.y=ty; teamAP -= cost; u.ap += cost; updateUI(); triggerRender();
     }
 
     function endTurn() {
         units.forEach(u => {
-            const ownB = u.team===1?bases.p1:bases.p2;
-            const enB = u.team===1?bases.p2:bases.p1;
-            if(Math.hypot(u.x-ownB.x, u.y-ownB.y) < 2.5) u.hp = Math.min(u.max, u.hp+5); // Base Heal
+            const ownB = u.team===1?bases.p1:bases.p2, enB = u.team===1?bases.p2:bases.p1;
+            if(Math.hypot(u.x-ownB.x, u.y-ownB.y) < 2.5) u.hp = Math.min(u.max, u.hp+5);
             if(Math.hypot(u.x-enB.x, u.y-enB.y) < 2.5) { if(u.team===1) p1Cap++; else p2Cap++; } else { if(u.team===1) p1Cap=0; else p2Cap=0; }
             u.ap = 0;
         });
-        if(p1Cap>=2) alert("P1 WINS BY CAPTURE!"); if(p2Cap>=2) alert("P2 WINS BY CAPTURE!");
-        
+        if(p1Cap>=2) alert("P1 WINS!"); if(p2Cap>=2) alert("P2 WINS!");
         currentPlayer = currentPlayer===1?2:1; turnCount++; teamAP = 6; selectedId = null; previewActive = false;
-        document.getElementById('recon-btn').classList.remove('active');
-        document.getElementById('turn-display').innerText = `TURN ${turnCount} - P${currentPlayer} ACTIVE`; 
-        updateUI(); triggerRender();
+        document.getElementById('turn-display').innerText = `TURN ${turnCount} - P${currentPlayer}`; updateUI(); triggerRender();
     }
     
-    // Start Rendering Engine
     requestAnimationFrame(renderLoop);
 </script>
 </body>
