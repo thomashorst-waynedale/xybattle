@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Coordinate Command v10.6 - Detonation Fix</title>
+    <title>Coordinate Command v10.14 - Terrain Tax</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         body { background: #000; color: #3dfc03; font-family: 'VT323', monospace; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 5px; overflow: hidden;}
@@ -16,48 +16,52 @@
         .blitz-mode { animation: blitzPulse 1.5s infinite; }
         
         #crt-frame { border: 8px solid #222; border-radius: 10px; position: relative; box-shadow: inset 0 0 30px #000; width: 800px; transition: all 0.5s; }
-        canvas { background: #050a05; display: block; image-rendering: pixelated; border-bottom: 3px solid #3dfc03; width: 800px; height: 360px; }
+        canvas { background: #050a05; display: block; image-rendering: pixelated; border-bottom: 3px solid #3dfc03; width: 800px; height: 360px; cursor: crosshair; }
         .hud-bottom { width: 816px; background: #0a0a0a; display: flex; flex-direction: column; padding: 5px 10px; border: 3px solid #222; border-top: none; box-sizing: border-box; }
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
         .formula-box { background: #000; border: 2px solid #3dfc03; padding: 4px; width: 100%; text-align: center; font-size: 18px; color: #fbff00; min-height: 70px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; flex-wrap: wrap; gap: 4px; }
         .slot { background: #111; border: 1px solid #3dfc03; color: #3dfc03; font-family: 'VT323', monospace; font-size: 16px; width: 45px; text-align: center; }
         button { font-family: 'VT323', monospace; font-size: 18px; padding: 4px 15px; cursor: pointer; border: 2px solid; border-radius: 3px; text-transform: uppercase; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; border-color: #555; }
     </style>
 </head>
 <body>
 
 <div id="start-screen" class="overlay">
-    <h1 style="color:#fbff00; font-size:50px; margin:0;">SKIRMISH v10.6</h1>
-    <p style="font-size:24px;">COORD_CMD: DETONATION PATCHED</p>
+    <h1 style="color:#fbff00; font-size:50px; margin:0;">SKIRMISH v10.14</h1>
+    <p style="font-size:24px;">COORD_CMD: TERRAIN TAX ENGAGED</p>
     <div style="text-align:left; color:#3dfc03; font-size:18px; max-width:600px; background:rgba(0,255,0,0.05); padding:15px; border-left:4px solid #3dfc03;">
-        • Elimination or Capture (r < 2.5) for Victory.<br>
-        • Hard Attrition: Mission ends at Turn 15.<br>
-        • Check Tactical Data (Help) for specialized maneuvers.
+        • Pre-Match: Deploy one obstacle on your half (y ≤ 3 limit).<br>
+        • Obstacles: Moving *through* ruins costs an additional +2 AP.<br>
+        • Opportunity Atk: Moving through an enemy inflicts 10 DMG.<br>
+        • High Ground: y > 5 grants +5 DMG Output AND -5 DMG Taken.
     </div>
-    <button style="background:#fbff00; color:#000; margin-top:20px;" onclick="startGame()">INITIALIZE SQUAD</button>
+    <button style="background:#fbff00; color:#000; margin-top:20px;" onclick="startGame()">INITIALIZE BATTLEFIELD</button>
 </div>
 
 <div id="turn-overlay" class="overlay" style="display:none;">
-    <h2 id="turn-msg" style="color:#fbff00; font-size:40px;">PLAYER 1: READY?</h2>
+    <h2 id="turn-msg" style="color:#fbff00; font-size:40px;"></h2>
     <div id="turn-stats" style="color:#3dfc03; font-size:20px; margin-bottom:20px;"></div>
-    <button style="background:#3dfc03; color:#000; font-size:28px;" onclick="beginPlayerTurn()">START TURN</button>
+    <button id="turn-btn" style="background:#3dfc03; color:#000; font-size:28px;"></button>
 </div>
 
 <div id="help-screen" class="overlay" style="display:none;">
     <h1 style="color:#fbff00;">TACTICAL DATA</h1>
     <div style="text-align:left; font-size:18px; color:#3dfc03; max-width:700px; line-height:1.4;">
-        • <strong>BLITZ:</strong> Execute commands while the grid pulses yellow for +3 DMG.<br>
-        • <strong>MANUAL:</strong> Typing coordinates grants -1 AP Logistics Discount.<br>
-        • <strong>RECON:</strong> Use 1AP to preview trajectories.
+        • <strong>OBSTACLES:</strong> Moving your trajectory through ruins costs +2 AP.<br>
+        • <strong>OPPORTUNITY ATK:</strong> Moving through an enemy space deals 10 DMG.<br>
+        • <strong>RUN & GUN:</strong> Firing after moving incurs a -5 DMG penalty.<br>
+        • <strong>HIGH GROUND:</strong> Firing from y > 5 grants +5 DMG Output & -5 DMG Taken.<br>
+        • <strong>UNIT CAP:</strong> A single unit can only spend a max of 3 AP per turn.
     </div>
-    <button style="background:#fbff00; color:#000;" onclick="toggleHelp()">RETURN</button>
+    <button style="background:#fbff00; color:#000; margin-top:15px;" onclick="toggleHelp()">RETURN</button>
 </div>
 
 <div id="crt-frame"><canvas id="battlefield" width="800" height="360"></canvas></div>
 
 <div class="hud-bottom">
     <div class="row">
-        <div id="allyInfo" style="font-size:16px; width:220px;">UNIT: NONE</div>
+        <div id="allyInfo" style="font-size:16px; width:280px; color:#3dfc03;">UNIT: NONE</div>
         <div id="combatLog" style="flex-grow:1; text-align:center; font-size:14px; color:#fbff00;">AWAITING COMMAND</div>
         <div id="mouseInfo" style="font-size:16px; color:#fbff00; width:220px; text-align:right;">MOUSE: [0, 0]</div>
     </div>
@@ -71,7 +75,7 @@
         </div>
         <div style="display:flex; gap:6px;">
             <button onclick="toggleHelp()" style="background:#fbff00; color:#000;">HELP</button>
-            <button id="btn-pass" onclick="finishTurn()" style="background:#222; color:#fff;">END TURN</button>
+            <button id="btn-pass" onclick="finishTurn()" style="background:#222; color:#fff;" disabled>END TURN</button>
             <button id="btn-engage" style="background:#ff0000; color:white;" onclick="fireAction()">ENGAGE</button>
         </div>
     </div>
@@ -80,6 +84,7 @@
 <script>
     const canvas = document.getElementById('battlefield'), ctx = canvas.getContext('2d');
     const scale = 30, centerX = 400, centerY = 180;
+    let setupPhase = 0; // 0: Start, 1: P1 Place, 2: P2 Place, 3: Gameplay
     let currentPlayer = 1, teamAP = 4, selectedId = null, previewActive = false;
     let turnCount = 1, activeAnims = [], snappedMouse = {x:0, y:0};
     let turnStartTime = 0, isManual = false, blitzActive = false, p1Cap = 0, p2Cap = 0;
@@ -87,15 +92,27 @@
     const ruins = [{x:-0.5, y:2, w:1, h:2}, {x:-0.5, y:-2, w:1, h:2}, {x:-5, y:-1, w:1, h:2}, {x:4, y:-1, w:1, h:2}];
     const bases = { p1: { x: -10, y: -4, r: 2.5 }, p2: { x: 10, y: -4, r: 2.5 } };
     let units = [
-        { id: 'P1-S', type: 'Sniper', x: -10, y: -3, team: 1, hp: 60, max: 60, ap: 0, visualX: -10, visualY: -3 },
-        { id: 'P1-B', type: 'Bastion', x: -9, y: -4, team: 1, hp: 120, max: 120, ap: 0, frag: 3, med: 3, visualX: -9, visualY: -4 },
-        { id: 'P2-S', type: 'Sniper', x: 10, y: -3, team: 2, hp: 60, max: 60, ap: 0, visualX: 10, visualY: -3 },
-        { id: 'P2-B', type: 'Bastion', x: 9, y: -4, team: 2, hp: 120, max: 120, ap: 0, frag: 3, med: 3, visualX: 9, visualY: -4 }
+        { id: 'P1-S', type: 'Sniper', x: -10, y: -3, team: 1, hp: 60, max: 60, ap: 0, hasMoved: false, visualX: -10, visualY: -3 },
+        { id: 'P1-B', type: 'Bastion', x: -9, y: -4, team: 1, hp: 120, max: 120, ap: 0, hasMoved: false, frag: 3, med: 3, visualX: -9, visualY: -4 },
+        { id: 'P2-S', type: 'Sniper', x: 10, y: -3, team: 2, hp: 60, max: 60, ap: 0, hasMoved: false, visualX: 10, visualY: -3 },
+        { id: 'P2-B', type: 'Bastion', x: 9, y: -4, team: 2, hp: 120, max: 120, ap: 0, hasMoved: false, frag: 3, med: 3, visualX: 9, visualY: -4 }
     ];
+
+    function showOverlay(title, sub, btnText, callback) {
+        document.getElementById('turn-overlay').style.display = 'flex';
+        document.getElementById('turn-msg').innerText = title;
+        document.getElementById('turn-stats').innerText = sub;
+        let btn = document.getElementById('turn-btn');
+        btn.innerText = btnText;
+        btn.onclick = callback;
+    }
 
     function startGame() { 
         document.getElementById('start-screen').style.display = 'none'; 
-        turnStartTime = Date.now(); 
+        setupPhase = 1;
+        showOverlay("PLAYER 1: FORTIFY", "Place one 1x2 obstacle (x < 0, y ≤ 3)", "DEPLOY", () => {
+            document.getElementById('turn-overlay').style.display = 'none';
+        });
         renderLoop(); 
     }
     
@@ -104,6 +121,7 @@
     function logCombat(msg) { document.getElementById('combatLog').innerText = msg; }
 
     function finishTurn() {
+        if(setupPhase !== 3) return;
         let pActiveIn = false;
         units.forEach(u => { 
             if(u.hp <= 0) return; 
@@ -117,19 +135,18 @@
         if(p1Cap>=2 || !units.some(u=>u.team===2&&u.hp>0)) { alert("PLAYER 1 WINS!"); location.reload(); return; }
         if(p2Cap>=2 || !units.some(u=>u.team===1&&u.hp>0)) { alert("PLAYER 2 WINS!"); location.reload(); return; }
 
-        document.getElementById('turn-overlay').style.display = 'flex';
         let nextP = currentPlayer === 1 ? 2 : 1;
-        document.getElementById('turn-msg').innerText = `PLAYER ${nextP}: INITIALIZE?`;
-        document.getElementById('turn-stats').innerText = `Current Turn: ${turnCount}/15 | Capture: [P1: ${p1Cap}/2 | P2: ${p2Cap}/2]`;
+        showOverlay(`PLAYER ${nextP}: READY?`, `Current Turn: ${turnCount}/15 | Capture: [P1: ${p1Cap}/2 | P2: ${p2Cap}/2]`, "START TURN", beginPlayerTurn);
     }
 
     function beginPlayerTurn() {
         document.getElementById('turn-overlay').style.display = 'none';
         if(turnCount >= 15) { alert("MISSION FAILURE: TIME EXPIRED."); location.reload(); return; }
         currentPlayer = currentPlayer === 1 ? 2 : 1;
-        if(currentPlayer === 1) turnCount++;
+        if(currentPlayer === 1 && turnCount > 0) turnCount++;
         
         teamAP = 4; selectedId = null; previewActive = false;
+        document.getElementById('btn-pass').disabled = false;
         turnStartTime = Date.now(); 
 
         units.forEach(u => { 
@@ -139,7 +156,8 @@
                     u.hp = Math.min(u.max, u.hp + 5);
                     logCombat(`BASE REPAIR: ${u.type} +5 HP`);
                 }
-                u.ap = 0;
+                u.ap = 0; 
+                u.hasMoved = false; 
             }
         });
         document.getElementById('btn-pass').innerText = `END TURN [T:${turnCount}/15]`;
@@ -156,9 +174,28 @@
             ctx.beginPath(); ctx.moveTo(0,py); ctx.lineTo(800,py); ctx.stroke();
             if(i%2===0 && i!==0) { ctx.fillText(i, px+2, centerY+14); ctx.fillText(i, centerX-18, py+10); }
         }
+
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 6]);
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(0, centerY - 5 * scale);
+        ctx.lineTo(800, centerY - 5 * scale);
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText("HIGH GRND (y > 5)", centerX + 10, centerY - 5 * scale - 10);
+        ctx.setLineDash([]);
+
         ctx.strokeStyle = '#3b82f6'; ctx.strokeRect(centerX+bases.p1.x*scale-75, centerY-bases.p1.y*scale-75, 150, 150);
         ctx.strokeStyle = '#ef4444'; ctx.strokeRect(centerX+bases.p2.x*scale-75, centerY-bases.p2.y*scale-75, 150, 150);
-        ruins.forEach(r => { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(centerX+r.x*scale, centerY-(r.y+r.h)*scale, r.w*scale, r.h*scale); ctx.strokeStyle = '#ff0000'; ctx.strokeRect(centerX+r.x*scale, centerY-(r.y+r.h)*scale, r.w*scale, r.h*scale); });
+        
+        ruins.forEach(r => { 
+            ctx.fillStyle = '#1a1a1a'; 
+            ctx.fillRect(centerX+r.x*scale, centerY-(r.y+r.h)*scale, r.w*scale, r.h*scale); 
+            ctx.strokeStyle = '#ffaa00'; 
+            ctx.strokeRect(centerX+r.x*scale, centerY-(r.y+r.h)*scale, r.w*scale, r.h*scale); 
+        });
+        
         ctx.strokeStyle = '#3dfc03'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(centerX,0); ctx.lineTo(centerX,360); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0,centerY); ctx.lineTo(800,centerY); ctx.stroke();
@@ -171,15 +208,47 @@
         return parseFloat(s) || 0;
     }
 
+    // CHECK IF PATH INTERSECTS A RUIN
+    function getObstaclePenalty(sx, sy, tx, ty) {
+        let d = Math.hypot(tx-sx, ty-sy);
+        if(d === 0) return 0;
+        let steps = Math.ceil(d * 10); // Check 10 points per grid unit
+        for (let i = 1; i < steps; i++) { // Skip exactly 0 and 1 to allow walking *next* to ruins
+            let px = sx + (tx - sx) * (i / steps);
+            let py = sy + (ty - sy) * (i / steps);
+            if (ruins.some(r => px > r.x && px < r.x + r.w && py > r.y && py < r.y + r.h)) {
+                return 2;
+            }
+        }
+        return 0;
+    }
+
     function updateForecasts() {
         const u = units.find(u => u.id === selectedId);
         if(!u) return;
         const moveBtn = document.getElementById('btn-move'), engageBtn = document.getElementById('btn-engage');
         const mx = getVal('mX'), my = getVal('mY'), dMove = Math.hypot(mx-u.x, my-u.y);
+        
         let cMove = Math.ceil(dMove/ (u.type==='Sniper'?6:3));
         if(isManual && cMove > 1) cMove--; 
-        moveBtn.innerText = `MOVE (${cMove})`;
-        moveBtn.disabled = (cMove+u.ap>3 || cMove>teamAP || dMove===0);
+        
+        let obsPenalty = getObstaclePenalty(u.x, u.y, mx, my);
+        cMove += obsPenalty; // Add penalty to the previewed cost
+
+        let isOOB = (mx < -13 || mx > 13 || my < -6 || my > 6);
+        moveBtn.disabled = (cMove+u.ap>3 || cMove>teamAP || dMove===0 || isOOB);
+        
+        if (isOOB) { 
+            moveBtn.innerText = `OOB (MAX ±13, ±6)`; 
+        } else if (obsPenalty > 0) {
+            moveBtn.innerText = `MOVE (${cMove} AP) [! OBSTACLE]`;
+            moveBtn.style.background = "#ffaa00";
+            moveBtn.style.color = "#000";
+        } else { 
+            moveBtn.innerText = `MOVE (${cMove})`; 
+            moveBtn.style.background = "#0044ff";
+            moveBtn.style.color = "white";
+        }
 
         if(u.type==='Sniper') { engageBtn.innerText="FIRE (1)"; engageBtn.disabled=(u.ap+1>3 || teamAP<1); }
         else {
@@ -195,6 +264,30 @@
     canvas.addEventListener('mousedown', (e) => {
         const rect = canvas.getBoundingClientRect();
         const mx = (e.clientX - rect.left - centerX) / scale, my = -(e.clientY - rect.top - centerY) / scale;
+        
+        if (setupPhase === 1) {
+            let rX = Math.round(mx), rY = Math.round(my);
+            if (rX < 0 && rX >= -13 && rY >= -6 && rY <= 3) {
+                ruins.push({x: rX - 0.5, y: rY - 1, w: 1, h: 2});
+                setupPhase = 2;
+                showOverlay("PLAYER 2: FORTIFY", "Place one 1x2 obstacle (x > 0, y ≤ 3)", "DEPLOY", () => {
+                    document.getElementById('turn-overlay').style.display = 'none';
+                });
+            }
+            return;
+        } else if (setupPhase === 2) {
+            let rX = Math.round(mx), rY = Math.round(my);
+            if (rX > 0 && rX <= 13 && rY >= -6 && rY <= 3) {
+                ruins.push({x: rX - 0.5, y: rY - 1, w: 1, h: 2});
+                setupPhase = 3;
+                turnCount = 0; 
+                showOverlay("PLAYER 1: READY?", "Fortifications Set. Initialize Combat.", "START GAME", beginPlayerTurn);
+            }
+            return;
+        }
+
+        if(setupPhase !== 3) return;
+
         units.forEach(u => { if(u.hp > 0 && Math.hypot(u.x - mx, u.y - my) < 0.8) { 
             if(u.team === currentPlayer) { selectedId = u.id; isManual = false; updateUI(); }
         }});
@@ -213,7 +306,7 @@
         const crtFrame = document.getElementById('crt-frame');
         const isOverlayHidden = document.getElementById('turn-overlay').style.display === 'none' && document.getElementById('start-screen').style.display === 'none';
         
-        if (((Date.now() - turnStartTime) / 1000) < 10 && isOverlayHidden) {
+        if (setupPhase === 3 && ((Date.now() - turnStartTime) / 1000) < 10 && isOverlayHidden) {
             blitzActive = true;
             if(!crtFrame.classList.contains('blitz-mode')) crtFrame.classList.add('blitz-mode');
         } else {
@@ -221,11 +314,17 @@
             if(crtFrame.classList.contains('blitz-mode')) crtFrame.classList.remove('blitz-mode');
         }
 
+        if ((setupPhase === 1 || setupPhase === 2) && snappedMouse.x >= -13 && snappedMouse.x <= 13 && snappedMouse.y >= -6 && snappedMouse.y <= 3) {
+            let isValid = (setupPhase === 1 && snappedMouse.x < 0) || (setupPhase === 2 && snappedMouse.x > 0);
+            ctx.fillStyle = isValid ? 'rgba(255, 170, 0, 0.5)' : 'rgba(255, 0, 0, 0.5)';
+            ctx.fillRect(centerX + (snappedMouse.x - 0.5) * scale, centerY - (snappedMouse.y + 1) * scale, 1 * scale, 2 * scale);
+        }
+
         ctx.strokeStyle = "rgba(251, 191, 0, 0.3)"; ctx.setLineDash([2, 2]);
         ctx.strokeRect(centerX+snappedMouse.x*scale-5, centerY-snappedMouse.y*scale-5, 10, 10);
         ctx.setLineDash([]);
 
-        if(previewActive && selectedId) {
+        if(previewActive && selectedId && setupPhase === 3) {
             const u = units.find(unit => unit.id === selectedId);
             ctx.strokeStyle = "rgba(61, 252, 3, 0.3)"; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
             if (u.type === 'Sniper') {
@@ -252,7 +351,6 @@
             ctx.fillStyle = "#fff"; ctx.font = "12px VT323"; ctx.fillText(`${Math.ceil(u.hp)}`, px-8, py+18);
         });
 
-        // SAFELY QUEUE NEW ANIMATIONS TO AVOID MUTATION BUGS
         let newAnims = [];
 
         activeAnims = activeAnims.filter(a => {
@@ -273,7 +371,6 @@
                 ctx.fillStyle = "#fbff00"; ctx.beginPath(); ctx.arc(centerX+a.curX*scale, centerY-a.curY*scale, 4, 0, Math.PI*2); ctx.fill();
                 
                 if(Math.hypot(a.tx-a.curX, a.ty-a.curY) < 0.3) { 
-                    // PUSH TO SAFE QUEUE INSTEAD OF MUTATING ACTIVE ARRAY
                     newAnims.push({type:'blast', x1:a.x1, x2:a.x2, y1:a.y1, y2:a.y2, mode:a.mode, life:1.5}); 
                     return false; 
                 }
@@ -281,10 +378,8 @@
             return a.life > 0;
         });
 
-        // APPEND NEW ANIMATIONS SAFELY
         if(newAnims.length > 0) activeAnims = activeAnims.concat(newAnims);
-        
-        if(selectedId) updateForecasts();
+        if(selectedId && setupPhase === 3) updateForecasts();
         requestAnimationFrame(renderLoop);
     }
 
@@ -294,6 +389,12 @@
         let targets = new Set(), bBonus = blitzActive ? 3 : 0;
         let logOutput = "";
 
+        let hgBonus = (u.y > 5) ? 5 : 0;
+        let moveNerf = u.hasMoved ? -5 : 0;
+        
+        if(hgBonus > 0) logOutput += "[HIGH GRND ATK: +5] ";
+        if(moveNerf < 0) logOutput += "[RUN & GUN: -5] ";
+
         if(u.type === 'Sniper') {
             const m1 = getVal('m1'), dir = document.getElementById('s-dir').value, pts = [];
             for(let i=u.x; Math.abs(i)<=13; i+=(dir === '>' ? 0.2 : -0.2)) { 
@@ -302,10 +403,10 @@
                 units.forEach(t=>{ if(t.team!==u.team && t.hp>0 && Math.hypot(t.x-i, t.y-cy)<0.5) {
                     let d = Math.hypot(t.x-u.x, t.y-u.y);
                     let power = 20; 
-                    if(d < 4) { power = 5; logOutput += " [TOO CLOSE: 5 DMG] "; } 
-                    else if (d > 10) { power = 10; logOutput += " [FALLOFF: 10 DMG] "; }
-                    else { logOutput += " [SWEET SPOT: 20 DMG] "; }
-                    targets.add({t, d: power + bBonus}); 
+                    if(d < 4) { power = 5; logOutput += "[TOO CLOSE: 5 DMG] "; } 
+                    else if (d > 10) { power = 10; logOutput += "[FALLOFF: 10 DMG] "; }
+                    else { logOutput += "[SWEET SPOT: 20 DMG] "; }
+                    targets.add({t, d: power + bBonus + hgBonus + moveNerf}); 
                 }}); 
             }
             activeAnims.push({type:'sniper', pts, life:1}); teamAP--; u.ap++;
@@ -314,43 +415,85 @@
             const ry1 = Math.min(getVal('y1'), getVal('y2')), ry2 = Math.max(getVal('y1'), getVal('y2'));
             const h=(rx1+rx2)/2, k=(ry1+ry2)/2;
             
-            let cThr=Math.ceil(Math.hypot(h-u.x, k-u.y)/4); if(isManual && cThr > 1) { cThr--; logOutput += " [MANUAL AP OVERRIDE] "; }
+            let cThr=Math.ceil(Math.hypot(h-u.x, k-u.y)/4); if(isManual && cThr > 1) { cThr--; logOutput += "[MANUAL AP OVERRIDE] "; }
             const mode = document.getElementById('b-mode').value, blast = Math.floor(Math.min(30, Math.max(5, 45 / Math.sqrt(Math.max(1,(rx2-rx1)*(ry2-ry1))))));
             
             activeAnims.push({type:'shell', curX:u.x, curY:u.y, tx:h, ty:k, x1:rx1, x2:rx2, y1:ry1, y2:ry2, mode, life:1});
-            units.forEach(t => { if(t.hp>0 && t.x>rx1 && t.x<rx2 && t.y>ry1 && t.y<ry2) { if(mode==='frag' && t.team!==u.team) targets.add({t, d:blast + bBonus}); if(mode==='med' && t.team===u.team) t.hp=Math.min(t.max, t.hp+blast); }});
+            units.forEach(t => { if(t.hp>0 && t.x>rx1 && t.x<rx2 && t.y>ry1 && t.y<ry2) { 
+                if(mode==='frag' && t.team!==u.team) targets.add({t, d:blast + bBonus + hgBonus + moveNerf}); 
+                if(mode==='med' && t.team===u.team) t.hp=Math.min(t.max, t.hp + Math.max(0, blast + hgBonus + moveNerf)); 
+            }});
             teamAP -= cThr; u.ap += cThr;
         }
 
-        if(bBonus > 0) logOutput += " [BLITZ: +3] ";
+        if(bBonus > 0) logOutput += "[BLITZ: +3] ";
 
         targets.forEach(h => { 
             let d = h.d;
             const ownB = h.t.team === 1 ? bases.p1 : bases.p2;
-            if(turnCount <= 2 && Math.hypot(h.t.x-ownB.x, h.t.y-ownB.y) < 2.5) { d = 0; logOutput += " [SAFE ZONE IMMUNITY] "; }
-            if (ruins.some(r => Math.abs(h.t.x - (r.x + r.w/2)) <= r.w/2 + 0.6 && Math.abs(h.t.y - (r.y + r.h/2)) <= r.h/2 + 0.6)) { d -= 5; logOutput += " [COVER: -5 DMG] "; }
-            h.t.hp -= d; 
+            
+            if(turnCount <= 2 && Math.hypot(h.t.x-ownB.x, h.t.y-ownB.y) < 2.5) { d = 0; logOutput += "[SAFE ZONE IMMUNITY] "; }
+            if (ruins.some(r => Math.abs(h.t.x - (r.x + r.w/2)) <= r.w/2 + 0.6 && Math.abs(h.t.y - (r.y + r.h/2)) <= r.h/2 + 0.6)) { d -= 5; logOutput += "[COVER DEF: -5] "; }
+            if (h.t.y > 5) { d -= 5; logOutput += "[HG DEF: -5] "; }
+
+            h.t.hp -= Math.max(0, d); 
         });
 
-        if(logOutput === "") logOutput = "SHOT MISSED / BLOCKED";
+        if(logOutput === "" || logOutput === "[HIGH GRND ATK: +5] " || logOutput === "[RUN & GUN: -5] ") logOutput = "SHOT MISSED / BLOCKED";
         logCombat(logOutput);
         updateUI();
     }
 
     function moveUnit() {
-        const u=units.find(u=>u.id===selectedId), tx=getVal('mX'), ty=getVal('mY'), d=Math.hypot(tx-u.x, ty-u.y);
+        const tx=getVal('mX'), ty=getVal('mY');
+        if (tx < -13 || tx > 13 || ty < -6 || ty > 6) { logCombat("ERR: OUT OF BOUNDS"); return; }
+        
+        const u=units.find(u=>u.id===selectedId), d=Math.hypot(tx-u.x, ty-u.y);
         let cost=Math.ceil(d/(u.type==='Sniper'?6:3)); 
-        if(isManual && cost > 1) { cost--; logCombat("[MANUAL AP OVERRIDE]"); } else { logCombat("UNIT RELOCATED"); }
-        u.x=tx; u.y=ty; teamAP -= cost; u.ap += cost; updateUI();
-    }
+        let obsPenalty = getObstaclePenalty(u.x, u.y, tx, ty);
+        
+        let moveMsg = "";
+        if(isManual && cost > 1) { cost--; moveMsg += "[MANUAL AP OVERRIDE] "; }
+        if(obsPenalty > 0) { cost += obsPenalty; moveMsg += "[OBSTACLE: +2 AP] "; }
+        
+        let collisionDamage = 0;
+        units.forEach(t => {
+            if (t.team !== u.team && t.hp > 0) {
+                let l2 = Math.pow(tx - u.x, 2) + Math.pow(ty - u.y, 2);
+                let dist = 0;
+                if (l2 === 0) {
+                    dist = Math.hypot(t.x - u.x, t.y - u.y);
+                } else {
+                    let t_param = ((t.x - u.x) * (tx - u.x) + (t.y - u.y) * (ty - u.y)) / l2;
+                    t_param = Math.max(0, Math.min(1, t_param));
+                    let projX = u.x + t_param * (tx - u.x);
+                    let projY = u.y + t_param * (ty - u.y);
+                    dist = Math.hypot(t.x - projX, t.y - projY);
+                }
+                if (dist < 0.8) { collisionDamage += 10; }
+            }
+        });
 
-    function toggleRecon() { if(teamAP >= 1) { teamAP--; previewActive = !previewActive; document.getElementById('recon-btn').style.background = previewActive ? "#3dfc03" : "#fbff00"; updateUI(); } }
+        if (collisionDamage > 0) {
+            u.hp -= collisionDamage;
+            moveMsg += `[OPP ATK: -${collisionDamage} HP] `;
+        } else if (moveMsg === "" || moveMsg === "[MANUAL AP OVERRIDE] ") {
+            moveMsg += "UNIT RELOCATED";
+        }
+        
+        logCombat(moveMsg.trim());
+        
+        u.x=tx; u.y=ty; teamAP -= cost; u.ap += cost; 
+        u.hasMoved = true; 
+        
+        updateUI();
+    }
 
     function updateUI() {
         const u = units.find(u => u.id === selectedId);
         document.getElementById('team-ap').innerText = teamAP;
         if(!u) { document.getElementById('allyInfo').innerHTML = "UNIT: NONE"; return; }
-        document.getElementById('allyInfo').innerHTML = `UNIT: ${u.type} [${u.x}, ${u.y}]`;
+        document.getElementById('allyInfo').innerHTML = `UNIT: ${u.type} [${u.x}, ${u.y}] | AP: ${3 - u.ap}/3`;
         const c = document.getElementById('formulaContainer');
         if(u.type === 'Sniper') c.innerHTML = `y - ${u.y} = <input id="m1" class="slot" value="1" oninput="handleManualType()"> (x - ${u.x}) FOR x <select id="s-dir" class="op-slot" onchange="updateForecasts()"><option value=">">></option><option value="<"><</option></select> ${u.x}`;
         else c.innerHTML = `<select id="b-mode" class="op-slot" onchange="updateForecasts()"><option value="frag">FRAG</option><option value="med">MED</option></select> <input id="x1" class="slot" value="${u.x-1}" oninput="handleManualType()"> < x < <input id="x2" class="slot" value="${u.x+1}" oninput="handleManualType()"> AND <input id="y1" class="slot" value="${u.y-1}" oninput="handleManualType()"> < y < <input id="y2" class="slot" value="${u.y+1}" oninput="updateForecasts()">`;
