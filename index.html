@@ -2,29 +2,35 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Coordinate Command v9.9.2 - Intermission Build</title>
+    <title>Coordinate Command v10.6 - Detonation Fix</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         body { background: #000; color: #3dfc03; font-family: 'VT323', monospace; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 5px; overflow: hidden;}
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; box-sizing: border-box; border: 4px solid #3dfc03; }
-        #crt-frame { border: 8px solid #222; border-radius: 10px; position: relative; box-shadow: inset 0 0 30px #000; width: 800px; }
+        
+        @keyframes blitzPulse {
+            0% { border-color: #222; box-shadow: inset 0 0 30px #000; }
+            50% { border-color: #fbff00; box-shadow: inset 0 0 50px rgba(251,191,0,0.5), 0 0 20px rgba(251,191,0,0.3); }
+            100% { border-color: #222; box-shadow: inset 0 0 30px #000; }
+        }
+        .blitz-mode { animation: blitzPulse 1.5s infinite; }
+        
+        #crt-frame { border: 8px solid #222; border-radius: 10px; position: relative; box-shadow: inset 0 0 30px #000; width: 800px; transition: all 0.5s; }
         canvas { background: #050a05; display: block; image-rendering: pixelated; border-bottom: 3px solid #3dfc03; width: 800px; height: 360px; }
         .hud-bottom { width: 816px; background: #0a0a0a; display: flex; flex-direction: column; padding: 5px 10px; border: 3px solid #222; border-top: none; box-sizing: border-box; }
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
         .formula-box { background: #000; border: 2px solid #3dfc03; padding: 4px; width: 100%; text-align: center; font-size: 18px; color: #fbff00; min-height: 70px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; flex-wrap: wrap; gap: 4px; }
         .slot { background: #111; border: 1px solid #3dfc03; color: #3dfc03; font-family: 'VT323', monospace; font-size: 16px; width: 45px; text-align: center; }
         button { font-family: 'VT323', monospace; font-size: 18px; padding: 4px 15px; cursor: pointer; border: 2px solid; border-radius: 3px; text-transform: uppercase; }
-        #blitzClock { color: #fbff00; font-size: 14px; font-weight: bold; width: 120px; text-align: right; }
-        .axis-label { color: #3dfc03; font-weight: bold; text-shadow: 0 0 5px #3dfc03; }
     </style>
 </head>
 <body>
 
 <div id="start-screen" class="overlay">
-    <h1 style="color:#fbff00; font-size:50px; margin:0;">SKIRMISH v9.9.2</h1>
-    <p style="font-size:24px;">COORD_CMD: MISSION_START</p>
+    <h1 style="color:#fbff00; font-size:50px; margin:0;">SKIRMISH v10.6</h1>
+    <p style="font-size:24px;">COORD_CMD: DETONATION PATCHED</p>
     <div style="text-align:left; color:#3dfc03; font-size:18px; max-width:600px; background:rgba(0,255,0,0.05); padding:15px; border-left:4px solid #3dfc03;">
-        • Elimination or Capture ($r < 2.5$) for Victory.<br>
+        • Elimination or Capture (r < 2.5) for Victory.<br>
         • Hard Attrition: Mission ends at Turn 15.<br>
         • Check Tactical Data (Help) for specialized maneuvers.
     </div>
@@ -40,7 +46,7 @@
 <div id="help-screen" class="overlay" style="display:none;">
     <h1 style="color:#fbff00;">TACTICAL DATA</h1>
     <div style="text-align:left; font-size:18px; color:#3dfc03; max-width:700px; line-height:1.4;">
-        • <strong>BLITZ:</strong> Execute commands within 10s for +3 DMG.<br>
+        • <strong>BLITZ:</strong> Execute commands while the grid pulses yellow for +3 DMG.<br>
         • <strong>MANUAL:</strong> Typing coordinates grants -1 AP Logistics Discount.<br>
         • <strong>RECON:</strong> Use 1AP to preview trajectories.
     </div>
@@ -53,7 +59,7 @@
     <div class="row">
         <div id="allyInfo" style="font-size:16px; width:220px;">UNIT: NONE</div>
         <div id="combatLog" style="flex-grow:1; text-align:center; font-size:14px; color:#fbff00;">AWAITING COMMAND</div>
-        <div id="blitzClock"></div>
+        <div id="mouseInfo" style="font-size:16px; color:#fbff00; width:220px; text-align:right;">MOUSE: [0, 0]</div>
     </div>
     <div id="formulaContainer" class="formula-box">SELECT UNIT ON GRID</div>
     <div class="row">
@@ -76,7 +82,7 @@
     const scale = 30, centerX = 400, centerY = 180;
     let currentPlayer = 1, teamAP = 4, selectedId = null, previewActive = false;
     let turnCount = 1, activeAnims = [], snappedMouse = {x:0, y:0};
-    let selectionTime = 0, isManual = false, blitzActive = false, p1Cap = 0, p2Cap = 0;
+    let turnStartTime = 0, isManual = false, blitzActive = false, p1Cap = 0, p2Cap = 0;
 
     const ruins = [{x:-0.5, y:2, w:1, h:2}, {x:-0.5, y:-2, w:1, h:2}, {x:-5, y:-1, w:1, h:2}, {x:4, y:-1, w:1, h:2}];
     const bases = { p1: { x: -10, y: -4, r: 2.5 }, p2: { x: 10, y: -4, r: 2.5 } };
@@ -87,22 +93,30 @@
         { id: 'P2-B', type: 'Bastion', x: 9, y: -4, team: 2, hp: 120, max: 120, ap: 0, frag: 3, med: 3, visualX: 9, visualY: -4 }
     ];
 
-    function startGame() { document.getElementById('start-screen').style.display='none'; renderLoop(); }
+    function startGame() { 
+        document.getElementById('start-screen').style.display = 'none'; 
+        turnStartTime = Date.now(); 
+        renderLoop(); 
+    }
+    
     function toggleHelp() { const h = document.getElementById('help-screen'); h.style.display = h.style.display === 'none' ? 'flex' : 'none'; }
-
     function handleManualType() { isManual = true; updateForecasts(); }
+    function logCombat(msg) { document.getElementById('combatLog').innerText = msg; }
 
     function finishTurn() {
-        // Logic check for game end
-        let p1In = false, p2In = false;
+        let pActiveIn = false;
         units.forEach(u => { 
             if(u.hp <= 0) return; 
-            const enB = u.team===1?bases.p2:bases.p1;
-            if(Math.hypot(u.x-enB.x, u.y-enB.y) < 2.5) { if(u.team===1) p1In = true; else p2In = true; }
+            const enB = u.team === 1 ? bases.p2 : bases.p1;
+            if(u.team === currentPlayer && Math.hypot(u.x-enB.x, u.y-enB.y) < 2.5) { pActiveIn = true; }
         });
-        if(p1In) p1Cap++; else p1Cap = 0; if(p2In) p2Cap++; else p2Cap = 0;
+        
+        if (currentPlayer === 1) { if(pActiveIn) p1Cap++; else p1Cap = 0; }
+        else { if(pActiveIn) p2Cap++; else p2Cap = 0; }
 
-        // Show Intermission
+        if(p1Cap>=2 || !units.some(u=>u.team===2&&u.hp>0)) { alert("PLAYER 1 WINS!"); location.reload(); return; }
+        if(p2Cap>=2 || !units.some(u=>u.team===1&&u.hp>0)) { alert("PLAYER 2 WINS!"); location.reload(); return; }
+
         document.getElementById('turn-overlay').style.display = 'flex';
         let nextP = currentPlayer === 1 ? 2 : 1;
         document.getElementById('turn-msg').innerText = `PLAYER ${nextP}: INITIALIZE?`;
@@ -114,11 +128,17 @@
         if(turnCount >= 15) { alert("MISSION FAILURE: TIME EXPIRED."); location.reload(); return; }
         currentPlayer = currentPlayer === 1 ? 2 : 1;
         if(currentPlayer === 1) turnCount++;
+        
         teamAP = 4; selectedId = null; previewActive = false;
+        turnStartTime = Date.now(); 
+
         units.forEach(u => { 
             if(u.hp > 0 && u.team === currentPlayer) {
                 const ownB = u.team===1?bases.p1:bases.p2;
-                if(Math.hypot(u.x-ownB.x, u.y-ownB.y) < 2.5) u.hp = Math.min(u.max, u.hp + 5);
+                if(Math.hypot(u.x-ownB.x, u.y-ownB.y) < 2.5) {
+                    u.hp = Math.min(u.max, u.hp + 5);
+                    logCombat(`BASE REPAIR: ${u.type} +5 HP`);
+                }
                 u.ap = 0;
             }
         });
@@ -126,7 +146,6 @@
         updateUI();
     }
 
-    // High Visibility Grid Rendering
     function drawGrid() {
         ctx.fillStyle = "rgba(251, 191, 36, 0.08)"; ctx.fillRect(0, 0, 800, centerY - 3 * scale); 
         ctx.strokeStyle = '#112211'; ctx.lineWidth = 1;
@@ -135,10 +154,7 @@
             let px = centerX + i*scale, py = centerY - i*scale;
             ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,360); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(0,py); ctx.lineTo(800,py); ctx.stroke();
-            if(i%2===0 && i!==0) { 
-                ctx.fillText(i, px+2, centerY+14); 
-                ctx.fillText(i, centerX-18, py+10); 
-            }
+            if(i%2===0 && i!==0) { ctx.fillText(i, px+2, centerY+14); ctx.fillText(i, centerX-18, py+10); }
         }
         ctx.strokeStyle = '#3b82f6'; ctx.strokeRect(centerX+bases.p1.x*scale-75, centerY-bases.p1.y*scale-75, 150, 150);
         ctx.strokeStyle = '#ef4444'; ctx.strokeRect(centerX+bases.p2.x*scale-75, centerY-bases.p2.y*scale-75, 150, 150);
@@ -148,7 +164,6 @@
         ctx.beginPath(); ctx.moveTo(0,centerY); ctx.lineTo(800,centerY); ctx.stroke();
     }
 
-    // Standard Math engine logic...
     function getVal(id) { 
         const s = document.getElementById(id)?.value;
         if(!s) return 0;
@@ -168,38 +183,107 @@
 
         if(u.type==='Sniper') { engageBtn.innerText="FIRE (1)"; engageBtn.disabled=(u.ap+1>3 || teamAP<1); }
         else {
-            const h=(getVal('x1')+getVal('x2'))/2, k=(getVal('y1')+getVal('y2'))/2;
+            const rx1 = Math.min(getVal('x1'), getVal('x2')), rx2 = Math.max(getVal('x1'), getVal('x2'));
+            const ry1 = Math.min(getVal('y1'), getVal('y2')), ry2 = Math.max(getVal('y1'), getVal('y2'));
+            const h=(rx1+rx2)/2, k=(ry1+ry2)/2;
             let cThr=Math.ceil(Math.hypot(h-u.x, k-u.y)/4);
             if(isManual && cThr > 1) cThr--; 
             engageBtn.innerText=`LAUNCH (${cThr})`; engageBtn.disabled=(cThr+u.ap>3 || cThr>teamAP);
         }
-
-        const diff = (Date.now() - selectionTime) / 1000;
-        if(diff < 10 && selectedId) { blitzActive = true; document.getElementById('blitzClock').innerText = `BLITZ: ${(10 - diff).toFixed(1)}s`; }
-        else { blitzActive = false; document.getElementById('blitzClock').innerText = ""; }
     }
 
     canvas.addEventListener('mousedown', (e) => {
         const rect = canvas.getBoundingClientRect();
         const mx = (e.clientX - rect.left - centerX) / scale, my = -(e.clientY - rect.top - centerY) / scale;
         units.forEach(u => { if(u.hp > 0 && Math.hypot(u.x - mx, u.y - my) < 0.8) { 
-            if(u.team === currentPlayer) { selectedId = u.id; selectionTime = Date.now(); isManual = false; updateUI(); }
+            if(u.team === currentPlayer) { selectedId = u.id; isManual = false; updateUI(); }
         }});
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const rx = (e.clientX - rect.left - centerX) / scale, ry = -(e.clientY - rect.top - centerY) / scale;
+        snappedMouse.x = Math.round(rx); snappedMouse.y = Math.round(ry);
+        document.getElementById('mouseInfo').innerText = `MOUSE: [${snappedMouse.x}, ${snappedMouse.y}]`;
     });
 
     function renderLoop() {
         ctx.clearRect(0,0,800,360); drawGrid();
+        
+        const crtFrame = document.getElementById('crt-frame');
+        const isOverlayHidden = document.getElementById('turn-overlay').style.display === 'none' && document.getElementById('start-screen').style.display === 'none';
+        
+        if (((Date.now() - turnStartTime) / 1000) < 10 && isOverlayHidden) {
+            blitzActive = true;
+            if(!crtFrame.classList.contains('blitz-mode')) crtFrame.classList.add('blitz-mode');
+        } else {
+            blitzActive = false;
+            if(crtFrame.classList.contains('blitz-mode')) crtFrame.classList.remove('blitz-mode');
+        }
+
+        ctx.strokeStyle = "rgba(251, 191, 0, 0.3)"; ctx.setLineDash([2, 2]);
+        ctx.strokeRect(centerX+snappedMouse.x*scale-5, centerY-snappedMouse.y*scale-5, 10, 10);
+        ctx.setLineDash([]);
+
+        if(previewActive && selectedId) {
+            const u = units.find(unit => unit.id === selectedId);
+            ctx.strokeStyle = "rgba(61, 252, 3, 0.3)"; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+            if (u.type === 'Sniper') {
+                const m1 = getVal('m1'), dir = document.getElementById('s-dir')?.value || '>';
+                ctx.beginPath(); ctx.moveTo(centerX+u.visualX*scale, centerY-u.visualY*scale);
+                let targetX = dir === '>' ? 13 : -13; ctx.lineTo(centerX+targetX*scale, centerY-(m1*(targetX-u.visualX)+u.visualY)*scale); ctx.stroke();
+            } else { 
+                const rx1 = Math.min(getVal('x1'), getVal('x2')), rx2 = Math.max(getVal('x1'), getVal('x2'));
+                const ry1 = Math.min(getVal('y1'), getVal('y2')), ry2 = Math.max(getVal('y1'), getVal('y2'));
+                ctx.strokeRect(centerX+rx1*scale, centerY-ry2*scale, (rx2-rx1)*scale, (ry2-ry1)*scale);
+            }
+            ctx.setLineDash([]);
+        }
+
         units.forEach(u => {
             if(u.hp <= 0) return;
-            const step = 0.2;
-            if (Math.abs(u.x - u.visualX) > step) u.visualX += (u.x > u.visualX ? step : -step); else u.visualX = u.x;
-            if (Math.abs(u.y - u.visualY) > step) u.visualY += (u.y > u.visualY ? step : -step); else u.visualY = u.y;
+            u.visualX += (u.x - u.visualX) * 0.1;
+            u.visualY += (u.y - u.visualY) * 0.1;
+            
             const px = centerX+u.visualX*scale, py = centerY-u.visualY*scale;
             ctx.fillStyle = u.team === 1 ? '#00ff00' : '#ff0000';
             if(selectedId === u.id) { ctx.strokeStyle = "white"; ctx.strokeRect(px-12, py-12, 24, 24); }
             ctx.fillRect(px-10, py-10, 20, 20);
             ctx.fillStyle = "#fff"; ctx.font = "12px VT323"; ctx.fillText(`${Math.ceil(u.hp)}`, px-8, py+18);
         });
+
+        // SAFELY QUEUE NEW ANIMATIONS TO AVOID MUTATION BUGS
+        let newAnims = [];
+
+        activeAnims = activeAnims.filter(a => {
+            a.life -= 0.02; 
+            if(a.type === 'sniper') {
+                ctx.strokeStyle = `rgba(255,255,255,${a.life})`; ctx.lineWidth = 3;
+                ctx.beginPath(); a.pts.forEach((p,i) => i===0?ctx.moveTo(p.px,p.py):ctx.lineTo(p.px,p.py)); ctx.stroke();
+            } else if (a.type === 'blast') {
+                a.ticks = (a.ticks || 0) + 1;
+                let pulse = 0.2 + 0.8 * Math.abs(Math.sin(a.ticks * 0.3));
+                let colors = a.mode === 'med' ? ['0, 255, 0', '0, 255, 255', '200, 255, 200'] : ['255, 0, 0', '255, 165, 0', '255, 255, 0'];
+                let cIdx = Math.floor(a.ticks / 4) % colors.length;
+                
+                ctx.fillStyle = `rgba(${colors[cIdx]}, ${a.life * pulse})`;
+                ctx.fillRect(centerX+a.x1*scale, centerY-a.y2*scale, (a.x2-a.x1)*scale, (a.y2-a.y1)*scale);
+            } else if (a.type === 'shell') {
+                a.curX += (a.tx - a.curX) * 0.15; a.curY += (a.ty - a.curY) * 0.15;
+                ctx.fillStyle = "#fbff00"; ctx.beginPath(); ctx.arc(centerX+a.curX*scale, centerY-a.curY*scale, 4, 0, Math.PI*2); ctx.fill();
+                
+                if(Math.hypot(a.tx-a.curX, a.ty-a.curY) < 0.3) { 
+                    // PUSH TO SAFE QUEUE INSTEAD OF MUTATING ACTIVE ARRAY
+                    newAnims.push({type:'blast', x1:a.x1, x2:a.x2, y1:a.y1, y2:a.y2, mode:a.mode, life:1.5}); 
+                    return false; 
+                }
+            }
+            return a.life > 0;
+        });
+
+        // APPEND NEW ANIMATIONS SAFELY
+        if(newAnims.length > 0) activeAnims = activeAnims.concat(newAnims);
+        
         if(selectedId) updateForecasts();
         requestAnimationFrame(renderLoop);
     }
@@ -208,34 +292,59 @@
         const u = units.find(u => u.id === selectedId);
         if(!u) return;
         let targets = new Set(), bBonus = blitzActive ? 3 : 0;
+        let logOutput = "";
+
         if(u.type === 'Sniper') {
             const m1 = getVal('m1'), dir = document.getElementById('s-dir').value, pts = [];
             for(let i=u.x; Math.abs(i)<=13; i+=(dir === '>' ? 0.2 : -0.2)) { 
                 let cy=m1*(i-u.x)+u.y; if(ruins.some(r => i > r.x && i < r.x + r.w && cy > r.y && cy < r.y + r.h)) break; 
                 pts.push({px:centerX+i*scale, py:centerY-cy*scale}); 
-                units.forEach(t=>{ if(t.team!==u.team && t.hp>0 && Math.hypot(t.x-i, t.y-cy)<0.5) targets.add({t, d: ((Math.hypot(t.x-u.x, t.y-u.y) < 4) ? 5 : (Math.hypot(t.x-u.x, t.y-u.y) > 10 ? 10 : 20)) + bBonus}); }); 
+                units.forEach(t=>{ if(t.team!==u.team && t.hp>0 && Math.hypot(t.x-i, t.y-cy)<0.5) {
+                    let d = Math.hypot(t.x-u.x, t.y-u.y);
+                    let power = 20; 
+                    if(d < 4) { power = 5; logOutput += " [TOO CLOSE: 5 DMG] "; } 
+                    else if (d > 10) { power = 10; logOutput += " [FALLOFF: 10 DMG] "; }
+                    else { logOutput += " [SWEET SPOT: 20 DMG] "; }
+                    targets.add({t, d: power + bBonus}); 
+                }}); 
             }
             activeAnims.push({type:'sniper', pts, life:1}); teamAP--; u.ap++;
         } else {
-            const x1=getVal('x1'), x2=getVal('x2'), y1=getVal('y1'), y2=getVal('y2'), h=(x1+x2)/2, k=(y1+y2)/2, dThr=Math.hypot(h-u.x, k-u.y);
-            let cThr=Math.ceil(dThr/4); if(isManual && cThr > 1) cThr--;
-            const mode = document.getElementById('b-mode').value, blast = Math.floor(Math.min(30, Math.max(5, 45 / Math.sqrt(Math.max(1,(x2-x1)*(y2-y1))))));
-            units.forEach(t => { if(t.hp>0 && t.x>x1 && t.x<x2 && t.y>y1 && t.y<y2) { if(mode==='frag' && t.team!==u.team) targets.add({t, d:blast + bBonus}); if(mode==='med' && t.team===u.team) t.hp=Math.min(t.max, t.hp+blast); }});
+            const rx1 = Math.min(getVal('x1'), getVal('x2')), rx2 = Math.max(getVal('x1'), getVal('x2'));
+            const ry1 = Math.min(getVal('y1'), getVal('y2')), ry2 = Math.max(getVal('y1'), getVal('y2'));
+            const h=(rx1+rx2)/2, k=(ry1+ry2)/2;
+            
+            let cThr=Math.ceil(Math.hypot(h-u.x, k-u.y)/4); if(isManual && cThr > 1) { cThr--; logOutput += " [MANUAL AP OVERRIDE] "; }
+            const mode = document.getElementById('b-mode').value, blast = Math.floor(Math.min(30, Math.max(5, 45 / Math.sqrt(Math.max(1,(rx2-rx1)*(ry2-ry1))))));
+            
+            activeAnims.push({type:'shell', curX:u.x, curY:u.y, tx:h, ty:k, x1:rx1, x2:rx2, y1:ry1, y2:ry2, mode, life:1});
+            units.forEach(t => { if(t.hp>0 && t.x>rx1 && t.x<rx2 && t.y>ry1 && t.y<ry2) { if(mode==='frag' && t.team!==u.team) targets.add({t, d:blast + bBonus}); if(mode==='med' && t.team===u.team) t.hp=Math.min(t.max, t.hp+blast); }});
             teamAP -= cThr; u.ap += cThr;
         }
+
+        if(bBonus > 0) logOutput += " [BLITZ: +3] ";
+
         targets.forEach(h => { 
             let d = h.d;
-            if (ruins.some(r => Math.abs(h.t.x - (r.x + r.w/2)) <= r.w/2 + 0.6 && Math.abs(h.t.y - (r.y + r.h/2)) <= r.h/2 + 0.6)) d -= 5;
+            const ownB = h.t.team === 1 ? bases.p1 : bases.p2;
+            if(turnCount <= 2 && Math.hypot(h.t.x-ownB.x, h.t.y-ownB.y) < 2.5) { d = 0; logOutput += " [SAFE ZONE IMMUNITY] "; }
+            if (ruins.some(r => Math.abs(h.t.x - (r.x + r.w/2)) <= r.w/2 + 0.6 && Math.abs(h.t.y - (r.y + r.h/2)) <= r.h/2 + 0.6)) { d -= 5; logOutput += " [COVER: -5 DMG] "; }
             h.t.hp -= d; 
         });
+
+        if(logOutput === "") logOutput = "SHOT MISSED / BLOCKED";
+        logCombat(logOutput);
         updateUI();
     }
 
     function moveUnit() {
         const u=units.find(u=>u.id===selectedId), tx=getVal('mX'), ty=getVal('mY'), d=Math.hypot(tx-u.x, ty-u.y);
-        let cost=Math.ceil(d/(u.type==='Sniper'?6:3)); if(isManual && cost > 1) cost--;
+        let cost=Math.ceil(d/(u.type==='Sniper'?6:3)); 
+        if(isManual && cost > 1) { cost--; logCombat("[MANUAL AP OVERRIDE]"); } else { logCombat("UNIT RELOCATED"); }
         u.x=tx; u.y=ty; teamAP -= cost; u.ap += cost; updateUI();
     }
+
+    function toggleRecon() { if(teamAP >= 1) { teamAP--; previewActive = !previewActive; document.getElementById('recon-btn').style.background = previewActive ? "#3dfc03" : "#fbff00"; updateUI(); } }
 
     function updateUI() {
         const u = units.find(u => u.id === selectedId);
